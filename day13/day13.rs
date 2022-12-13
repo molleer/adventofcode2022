@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
@@ -84,9 +85,7 @@ fn is_ordered(p1: &Package, p2: &Package) -> Option<bool> {
             }
             return Some(a.len() < b.len());
         }
-        _ => (),
     }
-    return Some(true);
 }
 
 fn main() -> io::Result<()> {
@@ -103,11 +102,49 @@ fn main() -> io::Result<()> {
         packages.push(parse_package(&mut row));
     }
 
+    let mut sum = 0;
+
     for i in (0..packages.len()).step_by(2) {
         match is_ordered(&packages[i], &packages[i + 1]) {
-            Some(true) => println!("Ordered!"),
-            Some(false) => println!("Not Ordered!"),
-            None => println!("Failed to parse!"),
+            Some(true) => sum += i / 2 + 1,
+            _ => (),
+        }
+    }
+
+    println!("Silver: {}", sum);
+
+    let stopper1 = Package::List(vec![Package::List(vec![Package::Numb(2)])]);
+    let stopper2 = Package::List(vec![Package::List(vec![Package::Numb(6)])]);
+
+    packages.push(stopper1);
+    packages.push(stopper2);
+
+    packages.sort_by(|a, b| match is_ordered(a, b) {
+        Some(true) => Ordering::Less,
+        _ => Ordering::Greater,
+    });
+
+    let mut s1_i = 0;
+
+    for i in 0..packages.len() {
+        match packages.get(i) {
+            Some(Package::List(a)) => match a.get(0) {
+                Some(Package::List(b)) => match b.get(0) {
+                    Some(Package::Numb(x)) => {
+                        if a.len() == 1 && b.len() == 1 {
+                            if *x == 2 {
+                                s1_i = i + 1;
+                            } else if *x == 6 {
+                                println!("Gold: {}", s1_i * (i + 1));
+                                break;
+                            }
+                        }
+                    }
+                    _ => (),
+                },
+                _ => (),
+            },
+            _ => (),
         }
     }
 
